@@ -94,6 +94,10 @@ void A6lib::powerCycle(int pin) {
     delay(2000);
 
     powerOn(pin);
+	
+	delay(4000);
+	
+	powerOff(pin);
 
     // Give the module some time to settle.
     logln("Done, waiting for the module to initialize...");
