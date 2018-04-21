@@ -70,7 +70,7 @@ byte A6lib::begin(long baudRate) {
 
     // Set SMS storage to the GSM modem. If this doesn't work for you, try changing the command to:
     // "AT+CPMS=SM,SM,SM"
-    if (A6_OK != A6command("AT+CPMS=ME,ME,ME", "OK", "yy", A6_CMD_TIMEOUT, 2, NULL))
+    if (A6_OK != A6command("AT+CPMS=SM,ME,SM", "OK", "yy", A6_CMD_TIMEOUT, 2, NULL))
         // This may sometimes fail, in which case the modem needs to be
         // rebooted.
     {
