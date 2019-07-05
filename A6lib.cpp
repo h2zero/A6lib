@@ -1,5 +1,4 @@
 #include <Arduino.h>
-#include <SoftwareSerial.h>
 #include "A6lib.h"
 
 
@@ -10,10 +9,12 @@
 A6lib::A6lib(int transmitPin, int receivePin) {
 #ifdef ESP8266
     A6conn = new SoftwareSerial(receivePin, transmitPin, false, 1024);
+#elif defined(ESP32)
+    A6conn = new HardwareSerial(receivePin, transmitPin);
 #else
     A6conn = new SoftwareSerial(receivePin, transmitPin, false);
 #endif
-    A6conn->setTimeout(100);
+A6conn->setTimeout(100);
 }
 
 
@@ -68,8 +69,7 @@ byte A6lib::begin(long baudRate) {
     // Turn SMS indicators off.
     A6command("AT+CNMI=1,0", "OK", "yy", A6_CMD_TIMEOUT, 2, NULL);
 
-    // Set SMS storage to the GSM modem. If this doesn't work for you, try changing the command to:
-    // "AT+CPMS=SM,SM,SM"
+    // Set SMS storage to the GSM modem.
     if (A6_OK != A6command("AT+CPMS=SM,ME,SM", "OK", "yy", A6_CMD_TIMEOUT, 2, NULL))
         // This may sometimes fail, in which case the modem needs to be
         // rebooted.
@@ -90,15 +90,12 @@ void A6lib::powerCycle(int pin) {
     logln("Power-cycling module...");
 
     powerOff(pin);
-
     delay(2000);
 
     powerOn(pin);
-	
 	delay(4000);
-	
-	powerOff(pin);
 
+    powerOff(pin);
     // Give the module some time to settle.
     logln("Done, waiting for the module to initialize...");
     delay(20000);
@@ -154,9 +151,9 @@ void A6lib::hangUp() {
 
 // Check whether there is an active call.
 callInfo A6lib::checkCallStatus() {
-    char number[50];
+
     String response = "";
-    uint32_t respStart = 0, matched = 0;
+    uint32_t respStart = 0;
     callInfo cinfo = (const struct callInfo) {
         0
     };
@@ -167,6 +164,8 @@ callInfo A6lib::checkCallStatus() {
     // Parse the response if it contains a valid +CLCC.
     respStart = response.indexOf("+CLCC");
     if (respStart >= 0) {
+		char number[50];
+		uint32_t matched = 0;
         matched = sscanf(response.substring(respStart).c_str(), "+CLCC: %d,%d,%d,%d,%d,\"%s\",%d", &cinfo.index, &cinfo.direction, &cinfo.state, &cinfo.mode, &cinfo.multiparty, number, &cinfo.type);
         cinfo.number = String(number);
     }
@@ -295,7 +294,7 @@ SMSmessage A6lib::readSMS(int index) {
     char number[50];
     char date[50];
     char type[10];
-    int respStart = 0, matched = 0;
+    int respStart = 0;
     SMSmessage sms = (const struct SMSmessage) {
         "", "", ""
     };
@@ -304,6 +303,7 @@ SMSmessage A6lib::readSMS(int index) {
     respStart = response.indexOf("+CMGR");
     if (respStart >= 0) {
         // Parse the message header.
+		uint32_t matched = 0;
         matched = sscanf(response.substring(respStart).c_str(), "+CMGR: \"REC %s\",\"%s\",,\"%s\"\r\n", type, number, date);
         sms.number = String(number);
         sms.date = String(date);
@@ -320,7 +320,7 @@ byte A6lib::deleteSMS(int index) {
     return A6command(buffer, "OK", "yy", A6_CMD_TIMEOUT, 2, NULL);
 }
 
-// Delete SMS with special flags; example 1,4 delete all SMS from the storage area
+// Delete SMS with special flags
 byte A6lib::deleteSMS(int index, int flag) {
     char buffer[20];
 	String command = "AT+CMGD=";
@@ -328,7 +328,8 @@ byte A6lib::deleteSMS(int index, int flag) {
     command += ",";
     command += String(flag);
     return A6command(command.c_str(), "OK", "yy", A6_CMD_TIMEOUT, 2, NULL);
-}
+}  // AT+CMGD=1,4 delete all SMS from the storage area
+
 
 // Set the SMS charset.
 byte A6lib::setSMScharset(String charset) {
@@ -345,7 +346,11 @@ void A6lib::setVol(byte level) {
     char buffer[30];
 
     // level should be between 5 and 8.
-    level = _min(_max(level, 5), 8);
+	#ifdef ESP8266
+		level = _min(_max(level, 5), 8);
+	#else
+		level = min(max(level, 5), 8);	
+	#endif
     sprintf(buffer, "AT+CLVL=%d", level);
     A6command(buffer, "OK", "yy", A6_CMD_TIMEOUT, 2, NULL);
 }
@@ -357,7 +362,11 @@ void A6lib::enableSpeaker(byte enable) {
     char buffer[30];
 
     // enable should be between 0 and 1.
-    enable = _min(_max(enable, 0), 1);
+	#ifdef ESP8266
+		enable = _min(_max(enable, 0), 1);
+	#else
+		enable = min(max(enable, 0), 1);
+	#endif	
     sprintf(buffer, "AT+SNFS=%d", enable);
     A6command(buffer, "OK", "yy", A6_CMD_TIMEOUT, 2, NULL);
 }
@@ -379,7 +388,6 @@ long A6lib::detectRate() {
     logln("Autodetecting connection rate...");
     for (int i = 0; i < countof(rates); i++) {
         rate = rates[i];
-
         A6conn->begin(rate);
         log("Trying rate ");
         log(rate);

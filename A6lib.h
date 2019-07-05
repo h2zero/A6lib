@@ -2,7 +2,12 @@
 #define A6lib_h
 
 #include <Arduino.h>
-#include "SoftwareSerial.h"
+
+#ifdef ESP32
+	#include "HardwareSerial.h"
+#else
+	#include "SoftwareSerial.h"
+#endif
 
 #ifdef DEBUG
 #define log(msg) Serial.print(msg)
@@ -19,7 +24,7 @@
 #define A6_TIMEOUT 2
 #define A6_FAILURE 3
 
-#define A6_CMD_TIMEOUT 2000
+#define A6_CMD_TIMEOUT 5000
 
 
 enum call_direction {
@@ -92,7 +97,7 @@ public:
     int getSMSLocsOfType(int* buf, int maxItems, String type);
     SMSmessage readSMS(int index);
     byte deleteSMS(int index);
-	byte deleteSMS(int index, int flag);
+    byte deleteSMS(int index, int flag);
     byte setSMScharset(String charset);
 
     void setVol(byte level);
@@ -100,7 +105,13 @@ public:
 
     String getRealTimeClock();
 
+
+#ifdef ESP32
+    HardwareSerial *A6conn;
+#else
     SoftwareSerial *A6conn;
+#endif
+	
 private:
     String read();
     byte A6command(const char *command, const char *resp1, const char *resp2, int timeout, int repetitions, String *response);
