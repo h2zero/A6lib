@@ -344,7 +344,11 @@ void A6lib::setVol(int level) {
     char buffer[30];
 
     // level should be between 5 and 8.
-    level = std::min(std::max(level, 5), 8);	
+	#ifdef ESP8266
+		level = std:min(std:max(level, 5), 8);
+	#else
+		level = min(max(level, 5), 8);
+	#endif	
 
     sprintf(buffer, "AT+CLVL=%d", level);
     A6command(buffer, "OK", "yy", A6_CMD_TIMEOUT, 2, NULL);
@@ -357,8 +361,12 @@ void A6lib::enableSpeaker(int enable) {
     char buffer[30];
 
     // enable should be between 0 and 1.
-
-    enable = std::min(std::max(enable, 0), 1);	
+	#ifdef ESP8266
+		enable = std::min(std::max(enable, 0), 1);
+	#else
+		enable = min(max(enable, 0), 1);
+	#endif	
+    
     sprintf(buffer, "AT+SNFS=%d", enable);
     A6command(buffer, "OK", "yy", A6_CMD_TIMEOUT, 2, NULL);
 }
