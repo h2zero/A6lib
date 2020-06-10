@@ -100,8 +100,8 @@ public:
     byte deleteSMS(int index, int flag);
     byte setSMScharset(String charset);
 
-    void setVol(byte level);
-    void enableSpeaker(byte enable);
+    void setVol(int level);
+    void enableSpeaker(int enable);
 
     String getRealTimeClock();
 

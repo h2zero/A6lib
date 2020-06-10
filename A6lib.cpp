@@ -7,9 +7,7 @@
 //
 
 A6lib::A6lib(int transmitPin, int receivePin) {
-#ifdef ESP8266
-    A6conn = new SoftwareSerial(receivePin, transmitPin, false, 1024);
-#elif defined(ESP32)
+#ifdef ESP32
     A6conn = new HardwareSerial(receivePin, transmitPin);
 #else
     A6conn = new SoftwareSerial(receivePin, transmitPin, false);
@@ -342,15 +340,12 @@ byte A6lib::setSMScharset(String charset) {
 
 // Set the volume for the speaker. level should be a number between 5 and
 // 8 inclusive.
-void A6lib::setVol(byte level) {
+void A6lib::setVol(int level) {
     char buffer[30];
 
     // level should be between 5 and 8.
-	#ifdef ESP8266
-		level = _min(_max(level, 5), 8);
-	#else
-		level = min(max(level, 5), 8);	
-	#endif
+    level = std::min(std::max(level, 5), 8);	
+
     sprintf(buffer, "AT+CLVL=%d", level);
     A6command(buffer, "OK", "yy", A6_CMD_TIMEOUT, 2, NULL);
 }
@@ -358,15 +353,12 @@ void A6lib::setVol(byte level) {
 
 // Enable the speaker, rather than the headphones. Pass 0 to route audio through
 // headphones, 1 through speaker.
-void A6lib::enableSpeaker(byte enable) {
+void A6lib::enableSpeaker(int enable) {
     char buffer[30];
 
     // enable should be between 0 and 1.
-	#ifdef ESP8266
-		enable = _min(_max(enable, 0), 1);
-	#else
-		enable = min(max(enable, 0), 1);
-	#endif	
+
+    enable = std::min(std::max(enable, 0), 1);	
     sprintf(buffer, "AT+SNFS=%d", enable);
     A6command(buffer, "OK", "yy", A6_CMD_TIMEOUT, 2, NULL);
 }
