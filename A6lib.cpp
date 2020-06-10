@@ -345,7 +345,7 @@ void A6lib::setVol(int level) {
 
     // level should be between 5 and 8.
 	#ifdef ESP8266
-		level = std:min(std:max(level, 5), 8);
+		level = std::min(std::max(level, 5), 8);
 	#else
 		level = min(max(level, 5), 8);
 	#endif	
